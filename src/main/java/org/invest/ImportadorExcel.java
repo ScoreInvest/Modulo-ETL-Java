@@ -12,6 +12,7 @@ import java.util.List;
 public class ImportadorExcel {
 
     private final JdbcTemplate jdbcTemplate;
+    private static final int MAX_INSERCOES = 1000;
 
     public ImportadorExcel(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -36,6 +37,12 @@ public class ImportadorExcel {
         int erros = 0;
 
         for (int i = 1; i < dados.size(); i++) {
+
+            if (inseridos >= MAX_INSERCOES) {
+                Log.registrar("LIMITE", "cotacoes",
+                        "Limite de " + MAX_INSERCOES + " inserções atingido, importação interrompida");
+                break;
+            }
 
             List<Object> linha = dados.get(i);
 
