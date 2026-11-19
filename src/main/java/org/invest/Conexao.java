@@ -12,6 +12,7 @@ public class Conexao {
         dataSource.setURL(
                 "jdbc:mysql://localhost:3306/scoreinvest"
         );
+
         dataSource.setUser("dba");
         dataSource.setPassword("scoreinvest");
 

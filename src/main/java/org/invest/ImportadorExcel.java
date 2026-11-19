@@ -1,98 +1,52 @@
-
 package org.invest;
 
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.time.LocalDate;
+import org.apache.poi.ss.usermodel.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ImportadorExcel {
 
-    private final JdbcTemplate jdbcTemplate;
-    private static final int MAX_INSERCOES = 1000;
+    private final List<List<Object>> dados = new ArrayList<>();
 
-    public ImportadorExcel(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+    public ImportadorExcel(String caminho) throws IOException {
 
-    public void importar(List<List<Object>> dados) {
+        try (FileInputStream arquivo = new FileInputStream(caminho);
+             Workbook workbook = WorkbookFactory.create(arquivo)) {
 
-        String sql = """
-        INSERT INTO cotacoes (
-            data_cotacao,
-            ticker,
-            preco_abertura,
-            preco_fechamento,
-            preco_maximo,
-            preco_minimo,
-            volume
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """;
+            Sheet planilha = workbook.getSheetAt(0);
+            DataFormatter formatador = new DataFormatter();
 
-        int inseridos = 0;
-        int erros = 0;
+            for (Row linha : planilha) {
 
-        for (int i = 1; i < dados.size(); i++) {
+                List<Object> valores = new ArrayList<>();
 
-            if (inseridos >= MAX_INSERCOES) {
-                Log.registrar("LIMITE", "cotacoes",
-                        "Limite de " + MAX_INSERCOES + " inserções atingido, importação interrompida");
-                break;
-            }
+                for (int i = 0; i < linha.getLastCellNum(); i++) {
 
-            List<Object> linha = dados.get(i);
-
-            try {
-                if (linha.size() < 7) {
-                    throw new IllegalArgumentException(
-                            "Linha " + (i + 1) + " possui menos de 7 colunas."
+                    Cell celula = linha.getCell(
+                            i, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL
                     );
+
+                    if (celula == null) {
+                        valores.add("");
+                    } else {
+                        valores.add(formatador.formatCellValue(celula));
+                    }
                 }
 
-               String dataTexto = linha.get(0).toString().trim();
-               LocalDate data = LocalDate.parse(dataTexto.substring(0, 10));
-              
-               String ticker = linha.get(1).toString().trim();
-
-                BigDecimal abertura = decimal(linha.get(2));
-                BigDecimal fechamento = decimal(linha.get(3));
-                BigDecimal maxima = decimal(linha.get(4));
-                BigDecimal minima = decimal(linha.get(5));
-                BigDecimal volume = decimal(linha.get(6));
-
-                jdbcTemplate.update(sql, Date.valueOf(data), ticker,
-                        abertura, fechamento, maxima, minima, volume);
-
-                inseridos++;
-                Log.registrar("INSERT", "cotacoes",
-                        "ticker=" + ticker + ", data=" + data);
-
-            } catch (DuplicateKeyException e) {
-                erros++;
-                Log.registrar("ERRO", "cotacoes",
-                        "Linha " + (i + 1) + ": cotação já cadastrada (data + ticker repetidos)");
-
-            } catch (Exception e) {
-                erros++;
-                Log.registrar("ERRO", "cotacoes",
-                        "Linha " + (i + 1) + ": " + e.getMessage());
+                dados.add(valores);
             }
         }
-
-        Log.registrar("IMPORTACAO", "cotacoes",
-                inseridos + " inserido(s), " + erros + " erro(s)");
     }
 
-    private BigDecimal decimal(Object valor) {
+    public List<List<Object>> getDados() {
+        return dados;
+    }
 
-        String texto = valor.toString()
-                .trim()
-                .replace(",", ".");
-
-        return new BigDecimal(texto);
+    public void exibirDados() {
+        for (List<Object> linha : dados) {
+            System.out.println(linha);
+        }
     }
 }
