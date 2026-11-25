@@ -2,15 +2,46 @@
 package org.invest;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
+import java.io.File;
+import java.util.UUID;
 import java.io.IOException;
 import java.util.List;
+
 
 public class Main {
 
     public static void main(String[] args) throws IOException {
 
         System.setProperty("log4j2.statusLoggerLevel", "OFF");
+
+        S3Client s3Client = new S3Provider().getS3Client();
+
+        String nomeBucket = "s3-scoreinvest-teste2";
+
+        try {
+            s3Client.createBucket(CreateBucketRequest.builder()
+                    .bucket(nomeBucket)
+                    .build());
+            System.out.println("Bucket criado!");
+        } catch (BucketAlreadyOwnedByYouException e) {
+            System.out.println("Bucket já existe, seguindo...");
+        }
+
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(nomeBucket)
+                        .key("cotacoes.xlsx")
+                        .build(),
+                RequestBody.fromFile(new File("cotacoes.xlsx")));
+        System.out.println("Planilha enviada para o S3!");
+
+        for (S3Object object : s3Client.listObjects(
+                ListObjectsRequest.builder().bucket(nomeBucket).build()).contents()) {
+            System.out.println("Objeto: " + object.key());
+        }
 
         // Estabelece conexão com o banco.
         JdbcTemplate jdbcTemplate = Conexao.conectar();
@@ -51,5 +82,7 @@ public class Main {
         exportadorExcel.exportar(dados);
 
         Log.registrar("FIM", "-", "Sistema encerrado");
+
+
     }
 }
