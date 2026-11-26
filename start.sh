@@ -1,0 +1,3 @@
+echo configurando variaveis globais...
+export SLACK_WEBHOOK_URL="SUA_URL_DO_WEBHOOK"
+echo concluido!

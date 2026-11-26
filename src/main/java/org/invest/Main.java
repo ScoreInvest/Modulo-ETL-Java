@@ -15,6 +15,12 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
+        NotificadorSlack slack = new NotificadorSlack();
+
+        slack.enviarMensagem(
+                "Iniciando a importação das cotações"
+        );
+
         System.setProperty("log4j2.statusLoggerLevel", "OFF");
 
         S3Client s3Client = new S3Provider().getS3Client();
@@ -80,6 +86,10 @@ public class Main {
 
         // Importa as cotações.
         exportadorExcel.exportar(dados);
+
+        slack.enviarMensagem(
+                "A importação das cotações foi concluída."
+        );
 
         Log.registrar("FIM", "-", "Sistema encerrado");
 
