@@ -9,8 +9,8 @@ import java.nio.charset.StandardCharsets;
 
 public class NotificadorSlack {
 
-    //TODO: ADICIONAR LINK WEBHOOK
-    private static final String WEBHOOK_URL ="";
+    private static final String WEBHOOK_URL =
+            "https://hooks.slack.com/services/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";
 
     private final HttpClient httpClient;
 
